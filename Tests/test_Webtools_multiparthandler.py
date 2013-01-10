@@ -11,7 +11,7 @@ except ImportError:
     import urllib.request as a_urllib
 import re
 from Bio.Webtools.multiparthandler import multiparthandler
-
+from __future__ import with_statement
 
 class multiparthandler_t(unittest.TestCase):
     validator_url = "http://validator.w3.org/check"
