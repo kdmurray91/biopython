@@ -45,7 +45,7 @@ before_script:
   - "if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then cd ../build/py3.3/Tests; fi"
 
 script:
-  - $PYTHON_EXE run_tests.py
+  - $PYTHON_EXE run_tests.py --offline
 
 #The email defaults are too talkative while we're getting Travis working nicely.
 notifications:

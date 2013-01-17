@@ -3,8 +3,8 @@ import unittest
 from Bio.Webtools import TAIR
 
 # Make sure test is skipped if not internet connected
-import requires_internet
-requires_internet.check()
+# import requires_internet
+# requires_internet.check()
 
 
 class TAIRDirect(unittest.TestCase):
