@@ -15,6 +15,9 @@ import re
 def _sanitise_agis(agis):
     """Takes a list of agis, and returns a list of only those which are valid.
     """
+    if isinstance(agis, str):
+        agis = [agis]
+
     clean_agis = []
     agi_re = re.compile(r"^AT[12345CM]G\d{5}(\.\d){0,1}$")
     for agi in agis:
@@ -62,7 +65,7 @@ def get(agis, dataset, target="representative"):
         "Must specify AGIs as a iterable, list or tuple"
         )
     agis = _sanitise_agis(agis)
-    if agis is None:
+    if len(agis) < 1:
         raise bad_agi_exception
 
     # Check dataset
