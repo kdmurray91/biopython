@@ -2,11 +2,6 @@ from __future__ import with_statement
 import unittest
 from Bio.Seq.web import tair
 
-# Make sure test is skipped if not internet connected
-import requires_internet
-requires_internet.check()
-
-
 class TairDirect(unittest.TestCase):
     test_agis = [
         "AT4G36450.1",
