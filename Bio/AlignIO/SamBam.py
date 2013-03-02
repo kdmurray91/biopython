@@ -1,19 +1,16 @@
 from Bio import bgzf
 from struct import unpack
 
-def _encode_seq(seq):
-    decoder = [
-            "=", "A", "C", "M", "G", "R", "S", "V",
-            "T", "W", "Y", "H", "K", "D", "B", "N",
-            ]
-    encoder = {}
-    for item in decoder:
-        encoder[item] = decoder.index(item)
+def _decode_cigar(cigar_str):
+    decoder = ["M", "I", "D", "N", "S", "H", "P", "=", "X"]
+    cigar = []
 
-    enc = 0
-    for nt in seq:
-        enc = enc << 4 | encoder[nt]
-    return "%x" % enc
+    for char in cigar_str:
+        op_len = (ord(char) & 0xF0) >> 4
+        op_index = ord(char) & 0x0F
+        op = decoder[op_index]
+        cigar.append((op,op_len))
+    return cigar
 
 
 def _decode_seq(seq_str):
