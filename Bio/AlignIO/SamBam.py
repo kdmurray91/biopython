@@ -67,7 +67,7 @@ class Bam(object):
                 except KeyError:
                     self.header[header_tag] = [tuple(fields), ]
 
-        # Parse
+        # Parse binary targets
         self.targets = []
         num_targets = unpack("<i", self.bgzf_file.read(4))[0]
 
@@ -80,10 +80,9 @@ class Bam(object):
                     target_name,
                     target_len,
                     ))
-        print "targets:"
-        print self.targets
 
     def next(self):
+        record = {}
         try:
             aln_size_str = self.bgzf_file.read(4)
             if len(aln_size_str) != 4:
@@ -91,72 +90,69 @@ class Bam(object):
         except:
             raise StopIteration
         aln_size = unpack("<i", aln_size_str)[0]
-        print "aln_size is %i" % aln_size
         aln = self.bgzf_file.read(aln_size)
-        print [c.encode("hex") for c in aln]
 
         target_id = unpack("<i", aln[:4])[0]
-        print "TID: %i" % target_id
         aln = aln[4:]
+        record["tid"] = target_id
 
         pos = unpack("<i", aln[:4])[0]
-        print "Pos: %i" % pos
         aln = aln[4:]
+        record["pos"] = pos
 
         # This is little endian, so the last byte first, i.e. reverse the
         # fields
         len_read_name = unpack("<B", aln[:1])[0]
-        print "LenReadName %i" % len_read_name
         aln = aln[1:]
+
         mapq = unpack("<B", aln[:1])[0]
-        print "Mapq %i" % mapq
         aln = aln[1:]
+        record["mapq"] = mapq
+
         bin = unpack("<H", aln[:2])[0]
-        print "Bin  %i" % bin
         aln = aln[2:]
+        record["bin"] = bin
 
         flag_nc = unpack("<I", aln[:4])[0]
-        print "flag_nc %i %x" % (flag_nc, flag_nc)
         aln = aln[4:]
         flag = (flag_nc & 0xffff0000) >> 16
-        print "flag %i" % flag
+        record["flag"] = flag
+
         n_cigar_op = (flag_nc & 0x0000ffff)
-        print "NCigarOps %i" % n_cigar_op
 
         seq_len = unpack("<i", aln[:4])[0]
-        print "seq_len %i" % seq_len
         aln = aln[4:]
+        record["seq_len"] = seq_len
 
         next_ref_id = unpack("<i", aln[:4])[0]
-        print "next_ref_id %i" % next_ref_id
         aln = aln[4:]
+        record["next_tid"] = next_ref_id
 
         next_pos = unpack("<i", aln[:4])[0]
-        print "next_pos %i" % next_pos
         aln = aln[4:]
+        record["next_pos"] = next_pos
 
         template_len = unpack("<i", aln[:4])[0]
-        print "template_len %i" % template_len
         aln = aln[4:]
+        record["template_len"] = template_len
 
         read_name = aln[:len_read_name].strip("\x00")
-        print "read_name %s" % read_name
         aln = aln[len_read_name:]
+        record["read_name"] = read_name
 
         cigar_str = aln[:n_cigar_op * 4]
-        print "cigar_str %s" % cigar_str
         aln = aln[n_cigar_op * 4:]
+        record["cigar"] = _decode_cigar(cigar_str)
 
         seq = aln[:((seq_len + 1) // 2)]
-        print "seq %s" % seq
-        print "decoded to %s" % _decode_seq(seq)
+        seq = _decode_seq(seq)
         aln = aln[((seq_len + 1) // 2):]
+        record["seq"] = seq
 
         qual = aln[:seq_len]
-        print "qual %s" % qual
+        quals = unpack("<" + "b" * seq_len, qual)
         aln = aln[seq_len:]
-        print "len of aln str is %i" % len(aln)
-
+        record["qual"] = quals
 
         tags = {}
         while len(aln) > 4:
@@ -165,6 +161,14 @@ class Bam(object):
 
             val_type = aln[:1]
             aln = aln[1:]
+
+            if val_type == "Z":
+                # If it's a string, it's length is delimited by a null byte
+                str_len = aln.index("\x00")
+                value = aln[:str_len]
+                aln = aln[str_len:]
+                tags[tag] = value
+                continue
 
             try:
                 val_length = self.val_lengths[val_type]
@@ -183,9 +187,12 @@ class Bam(object):
             value = unpack("<%s" % val_type, aln[:val_length])
             aln = aln[val_length:]
 
-            if len(value) == 1:  
+            if len(value) == 1:
                 # no point in having the value in a tuple if it's a scalar
                 value = value[0]
-
             tags[tag] = value
-            print (tag, value)
+        record["tags"] = tags
+        return record
+
+    def __iter__(self):
+        return self
