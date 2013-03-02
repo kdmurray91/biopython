@@ -25,32 +25,18 @@ def _decode_seq(seq_str):
         nibble2 = ord(char) & 0x0F
         decoded_seq += decoder[nibble1]
         decoded_seq += decoder[nibble2]
-    return decoded_seq
+    return decoded_seq.rstrip("=")
 
 
 class Bam(object):
     val_lengths = {  # lengths of BAM types
-            "A": 1,
-            "Z": 1,
-            "c": 1,
-            "C": 1,
-            "s": 2,
-            "S": 2,
-            "i": 4,
-            "I": 4,
+            "A": 1, "Z": 1, "c": 1, "C": 1,
+            "s": 2, "S": 2, "i": 4, "I": 4,
             }
     val_types = {  # Map between types of BAM and types of struct module
-            "A": "s",
-            "Z": "s",
-            "c": "b",
-            "C": "B",
-            "s": "h",
-            "S": "H",
-            "i": "i",
-            "I": "I",
+            "A": "s", "Z": "s", "c": "b", "C": "B",
+            "s": "h", "S": "H", "i": "i", "I": "I",
             }
-
-
 
     def __init__(self, filename, keep_plaintext_targets=False):
         self.filename = filename
